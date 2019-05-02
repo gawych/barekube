@@ -1,0 +1,91 @@
+---
+
+- name: add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: add Docker repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+    filename: docker
+
+- name: add Kubernetes GPG key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: add Kubernetes repository
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes.list
+
+- name: update repositories cache
+  apt:
+    update_cache: yes
+
+- name: install misc packages
+  apt:
+    name: ['aptitude', 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+    state: present
+
+- name: install docker-ce
+  apt:
+    name: docker-ce
+    state: present
+
+- name: Copy a daemon.json file for docker.
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+
+- name: restart Docker
+  service:
+    name: docker
+    state: restarted
+
+- name: ensure net.bridge.bridge-nf-call-ip6tables is set to 1
+  sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+    state: present
+
+- name: ensure net.bridge.bridge-nf-call-iptables is set to 1
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+    state: present
+
+- name: Disable SWAP since kubernetes can't work with swap enabled
+  shell: |
+    swapoff -a
+
+- name: Disable SWAP in fstab since kubernetes can't work with swap enabled
+  replace:
+    path: /etc/fstab
+    regexp: '^(.+?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: install kubelet
+  apt:
+    name: kubelet={{ kubelet_version }}
+    state: present
+
+- name: install kubeadm
+  apt:
+    name: kubeadm={{ kubeadm_version }}
+    state: present
+
+- name: start kubelet
+  service:
+    name: kubelet
+    enabled: yes
+    state: started
+
+- name: install kubectl
+  apt:
+    name: kubectl={{ kubectl_version }}
+    state: present
+  when: "'master' in group_names"

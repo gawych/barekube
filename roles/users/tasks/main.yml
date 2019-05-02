@@ -1,0 +1,22 @@
+---
+
+- name: create {{ default_sudo_user }}
+  user: 
+    name: "{{ default_sudo_user }}"
+    append: yes 
+    state: present 
+    createhome: yes 
+    shell: /bin/bash
+
+- name: allow {{ default_sudo_user }} to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    line: '{{ default_sudo_user }} ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: set up authorized keys for the {{ default_sudo_user }} user
+  authorized_key: 
+    user: "{{ default_sudo_user }}"
+    key: "{{item}}"
+  with_file:
+    - ~/.ssh/id_rsa.pub

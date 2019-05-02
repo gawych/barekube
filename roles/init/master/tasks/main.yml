@@ -1,0 +1,62 @@
+---
+
+- name: Init Kubernetes cluster
+  shell: |
+    kubeadm init --service-cidr {{ kube_services_network_cidr }} \
+                 --kubernetes-version {{ kube_version }} \
+                 --pod-network-cidr {{ kube_pods_network_cidr }} \
+                 --apiserver-advertise-address {{ kube_master_ip }} \
+                 --token {{ kube_token }} >> cluster_initialized.txt
+  args:
+    chdir: $HOME
+    creates: cluster_initialized.txt
+  register: init_cluster
+  tags:
+    - master
+    - configure
+
+- name: Create Kubernetes config directory /root/.kube
+  when: init_cluster is succeeded
+  file:
+    path: /root/.kube/
+    state: directory
+  tags:
+    - master
+    - configure
+
+- name: Copy admin.conf to kube-master root directory
+  copy:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "/root/.kube/config"
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: True
+  tags:
+    - master
+    - configure
+
+- name: Copy admin.conf to local root directory
+  fetch:
+    src: "/etc/kubernetes/admin.conf"
+    dest: "/root/.kube/config"
+    flat: yes
+  tags:
+    - master
+    - configure
+
+- name: Enable and restart kubelet engine
+  when: init_cluster is succeeded
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  register: started_kubelet
+  tags:
+    - master
+    - configure
+
+- name: installing network - Weave Net
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+

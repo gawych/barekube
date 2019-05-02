@@ -1,0 +1,15 @@
+[master]
+kube-master ansible_host=192.168.168.203
+
+[node]
+kube-node1 ansible_host=192.168.168.216
+kube-node2 ansible_host=192.168.171.23
+
+[all:vars]
+ansible_port=22
+ansible_ssh_user=gaaw
+#ansible_ssh_private_key_file=stand.pem
+
+become_method=sudo
+become_user=gaaw
+become_ask_pass=False

@@ -1,0 +1,49 @@
+---
+
+- name: Generate join token
+#  when: inventory_hostname == 'kube-master'
+  shell: kubeadm token create --print-join-command
+  register: kubeadm_join_cmd
+  delegate_to: "{{ groups['master'][0] }}"
+
+- set_fact:
+    kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
+
+- debug: var=kubeadm_join
+
+- name: Store join command
+  action: copy content="{{ kubeadm_join }}" dest="/etc/kubernetes/kubeadm-join.command"
+
+- name: Run kubeadm join
+  when: inventory_hostname in groups['node']
+  shell: "{{ kubeadm_join }} >> node_joined.txt"
+  args:
+    chdir: $HOME
+    creates: node_joined.txt
+
+- name: Enable and restart kubelet engine
+  when: inventory_hostname in groups['node']
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+  register: started_kubelet
+  tags:
+    - node
+    - configure
+
+- name: Set a cron job to clean old docker images.
+  when: inventory_hostname in groups['node']
+  cron:
+    name: cleandocker
+    user: root
+    minute: "0"
+    hour: "23"
+    job: "docker system prune -af"
+    state: present
+  tags:
+    - cleandocker
+    - node
+    - configure
+

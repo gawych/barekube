@@ -1,0 +1,21 @@
+---
+
+###--- Users variables ---###
+default_sudo_user:                      'gaaw'
+
+###--- Network variables ---###
+kube_master_ip:                         '192.168.168.203'
+kube_node1_ip:                          '192.168.168.216'
+kube_node2_ip:                          '192.168.171.23'
+
+###--- Kubernetes variables ---###
+kube_version:                           'v1.14.1'
+kubectl_version:                        '1.14.1-00'
+kubelet_version:                        '1.14.1-00'
+kubeadm_version:                        '1.14.1-00'
+
+kube_token:                             'cf242f.c06198def96e7d73'
+
+kube_services_network_cidr:             '10.96.0.0/12'
+kube_pods_network_cidr:                 '10.244.0.0/16'
+

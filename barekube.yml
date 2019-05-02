@@ -1,0 +1,47 @@
+---
+
+- name: managing users
+  hosts:
+    - master
+    - node
+  gather_facts: true
+  become: yes
+  roles:
+    - users
+  tags:
+    - users
+
+- name: install packages
+  hosts:
+    - master
+    - node
+  gather_facts: true
+  become: yes
+  roles:
+    - pkg
+  tags:
+    - pkg
+
+- name: initialize kube-master 
+  hosts:
+    - master
+  gather_facts: true
+  become: yes
+  roles:
+    - init/master
+  tags:
+    - init
+    - master
+
+- name: initialize kube-nodes
+  hosts:
+    - master
+    - node
+  gather_facts: true
+  become: yes
+  roles:
+    - init/node
+  tags:
+    - init
+    - node
+
